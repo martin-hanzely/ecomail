@@ -8,9 +8,7 @@ from ecomail.utils import is_empty_or_whitespace
 @dataclass(kw_only=True, frozen=True)
 class Subscriber:
     """
-    Subscriber contact data.
-    Requires keyword arguments.
-    Frozen class (values cannot be reassigned).
+    Subscriber contact data. Requires keyword arguments. Frozen class (values cannot be reassigned).
     """
     name: str
     surname: str

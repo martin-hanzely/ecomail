@@ -24,6 +24,9 @@ class EcoMailOptions:
 class EcoMailService:
     """
     Connection service for EcoMail API.
+    Docs: https://ecomailappapiv2.docs.apiary.io/#
+    API is rate-limited 1000 calls for an API key per minute.
+    Other request will be throttled with 429 return code and a Retry-After header.
     """
     _options: EcoMailOptions
 

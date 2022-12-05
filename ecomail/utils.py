@@ -1,5 +1,5 @@
-def is_empty_or_whitespace(string: str) -> bool:
+def is_empty_or_whitespace(string: str | None) -> bool:
     """
-    Checks if provided string is empty or whitespace.
+    Checks if provided string is None, empty or whitespace.
     """
-    return string.isspace() or (len(string) == 0)
+    return (string is None) or string.isspace() or (len(string) == 0)
