@@ -54,7 +54,7 @@ class EcoMailService:
     ) -> int:
         """
         Adds new subscriber to given list. Updates data if subscriber already exists.
-        Dose not force resuscribe. Returns ID of newly created subscriber.
+        Does not force resubscribe. Returns ID of newly created subscriber.
         """
         response = self._call_add_new_subscriber_to_list(list_id, subscriber)
         json_data: dict[str, Any] = response.json()
@@ -70,7 +70,7 @@ class EcoMailService:
     ) -> None:
         """
         Adds new subscribers in bulk to given list. Updates existing subscribers.
-        Bulk endpoint is limited to 3000 subscribers, subsribers over 3000 will be ignored.
+        Bulk endpoint is limited to 3000 subscribers, subscribers over 3000 will be ignored.
         """
         if len(subscribers) > 3000:
             raise ApiRequestError("Bulk endpoint is limited to 3000 subscribers.")

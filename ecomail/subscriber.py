@@ -25,7 +25,7 @@ class Subscriber:
 
     def __post_init__(self) -> None:
         """
-        Post-init processing. Raises SubscriberError if email adress is empty string.
+        Post-init processing. Raises SubscriberError if email address is empty string.
         """
         if is_empty_or_whitespace(self.email):
             # TODO: Improve email validation.
