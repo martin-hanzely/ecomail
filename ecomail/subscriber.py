@@ -1,13 +1,7 @@
 from dataclasses import dataclass, asdict
 
 from ecomail.exceptions import SubscriberError
-
-
-def is_empty_or_whitespace(string: str) -> bool:
-    """
-    Checks if provided string is empty or whitespace.
-    """
-    return string.isspace() or (len(string) == 0)
+from ecomail.utils import is_empty_or_whitespace
 
 
 # Require keyword arguments and make objects frozen.
