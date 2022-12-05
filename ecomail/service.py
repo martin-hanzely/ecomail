@@ -4,7 +4,7 @@ from urllib.parse import urljoin
 
 import requests
 
-from ecomail.exceptions import ApiConnectionError
+from ecomail.exceptions import ApiConnectionError, ApiRequestError
 from ecomail.subscriber import Subscriber
 
 
@@ -63,6 +63,21 @@ class EcoMailService:
         except KeyError as exc:
             raise ApiConnectionError("Subscriber ID could not be retrieved.") from exc
 
+    def add_bulk_subscribers_to_list(
+        self,
+        list_id: int,
+        subscribers: list[Subscriber],
+    ) -> None:
+        """
+        Adds new subscribers in bulk to given list. Updates existing subscribers.
+        Bulk endpoint is limited to 3000 subscribers, subsribers over 3000 will be ignored.
+        """
+        if len(subscribers) > 3000:
+            raise ApiRequestError("Bulk endpoint is limited to 3000 subscribers.")
+
+        # Response status code is checked. Returns job ID. No need to pass anything to client.
+        _ = self._call_add_bulk_subscribers_to_list(list_id, subscribers)
+
     def _call_add_new_list(
         self,
         name: str,
@@ -100,6 +115,22 @@ class EcoMailService:
             # trigger_autoresponders  # (default: false) - Trigger automations after subscribe.
             # trigger_notification  # (default: false) - Send subscribe notifications.
             # skip_confirmation  # (default: false) - skip double opt-in.
+        }
+        return self._call_api(endpoint=endpoint_path, data=data, headers={})
+
+    def _call_add_bulk_subscribers_to_list(
+        self,
+        list_id: int,
+        subscribers: list[Subscriber],
+    ) -> requests.Response:
+        """
+        Calls "Lists/List subscribe bulk/Add bulk subscribers to list" api endpoint.
+        https://ecomailappapiv2.docs.apiary.io/#reference/lists/list-subscribe-bulk/add-bulk-subscribers-to-list
+        """
+        endpoint_path = f"lists/{list_id}/subscribe-bulk"
+        data = {
+            "subscriber_data": [_s.as_dict() for _s in subscribers],
+            "update_existing": True,
         }
         return self._call_api(endpoint=endpoint_path, data=data, headers={})
 

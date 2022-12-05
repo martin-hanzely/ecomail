@@ -10,6 +10,12 @@ class ApiConnectionError(EcoMailError):
     """
 
 
+class ApiRequestError(EcoMailError):
+    """
+    Service request error.
+    """
+
+
 class SubscriberError(EcoMailError):
     """
     Subscriber error.
