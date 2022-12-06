@@ -117,7 +117,7 @@ class EcoMailService:
             "resubscribe": False,
             # trigger_autoresponders  # (default: false) - Trigger automations after subscribe.
             # trigger_notification  # (default: false) - Send subscribe notifications.
-            # skip_confirmation  # (default: false) - skip double opt-in.
+            "skip_confirmation": True, # Skip double opt-in.
         }
         return self._call_api(endpoint=endpoint_path, data=data, headers={})
 
