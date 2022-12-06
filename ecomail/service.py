@@ -99,7 +99,7 @@ class EcoMailService:
             "from_email": from_email,
             "reply_to": reply_to or from_email,  # Reply to from_email by default.
         }
-        return self._call_api(endpoint=endpoint_path, data=data, headers={})
+        return self._call_api(endpoint=endpoint_path, json=data, headers={})
 
     def _call_add_new_subscriber_to_list(
         self,
@@ -119,7 +119,7 @@ class EcoMailService:
             # trigger_notification  # (default: false) - Send subscribe notifications.
             "skip_confirmation": True, # Skip double opt-in.
         }
-        return self._call_api(endpoint=endpoint_path, data=data, headers={})
+        return self._call_api(endpoint=endpoint_path, json=data, headers={})
 
     def _call_add_bulk_subscribers_to_list(
         self,
@@ -135,16 +135,16 @@ class EcoMailService:
             "subscriber_data": [_s.as_dict() for _s in subscribers],
             "update_existing": True,
         }
-        return self._call_api(endpoint=endpoint_path, data=data, headers={})
+        return self._call_api(endpoint=endpoint_path, json=data, headers={})
 
-    def _call_api(self, endpoint: str, data: _mapping, headers: _mapping) -> requests.Response:
+    def _call_api(self, endpoint: str, json: _mapping, headers: _mapping) -> requests.Response:
         """
         Generic api call with provided parameters. Parameters override query and header defaults.
         """
         base_url = self._options.base_url
         response = requests.post(
             urljoin(base_url, endpoint),
-            data=data,
+            json=json,  # Data must be sent as JSON.
             headers={"key": self._options.api_key} | headers,  # Authentication required.
             timeout=60,
         )
