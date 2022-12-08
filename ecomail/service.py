@@ -47,7 +47,12 @@ class EcoMailService:
         """
         Creates new list of subscribers. Returns ID of newly created list.
         """
-        response = self._call_add_new_list(name, from_name, from_email, reply_to)
+        response = self._call_add_new_list(
+            name=name,
+            from_name=from_name,
+            from_email=from_email,
+            reply_to=reply_to or from_email,  # Reply to from_email by default.
+        )
         json_data: dict[str, Any] = response.json()
         try:
             return json_data["id"]
@@ -58,12 +63,17 @@ class EcoMailService:
         self,
         list_id: int,
         subscriber: Subscriber,
+        trigger_autoresponders: bool = False,
     ) -> int:
         """
         Adds new subscriber to given list. Updates data if subscriber already exists.
         Does not force resubscribe. Returns ID of newly created subscriber.
         """
-        response = self._call_add_new_subscriber_to_list(list_id, subscriber)
+        response = self._call_add_new_subscriber_to_list(
+            list_id=list_id,
+            subscriber=subscriber,
+            trigger_autoresponders=trigger_autoresponders
+        )
         json_data: dict[str, Any] = response.json()
         try:
             return json_data["id"]
@@ -90,7 +100,7 @@ class EcoMailService:
         name: str,
         from_name: str,
         from_email: str,
-        reply_to: str | None = None,
+        reply_to: str,
     ) -> requests.Response:
         """
         Calls "Lists/List Collections/Add new list" api endpoint.
@@ -101,7 +111,7 @@ class EcoMailService:
             "name": name,
             "from_name": from_name,
             "from_email": from_email,
-            "reply_to": reply_to or from_email,  # Reply to from_email by default.
+            "reply_to": reply_to,
         }
         return self._call_api(endpoint=endpoint_path, json=data, headers={})
 
@@ -109,7 +119,7 @@ class EcoMailService:
         self,
         list_id: int,
         subscriber: Subscriber,
-        trigger_autoresponders: bool = False,
+        trigger_autoresponders: bool,
     ) -> requests.Response:
         """
         Calls "Lists/List subscribe/Add new subscriber to list" api endpoint.
