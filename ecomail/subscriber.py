@@ -14,13 +14,18 @@ class Subscriber:
     surname: str
     email: str
     phone: str | None = None
+    country: str | None = None  # ISO 3166-1 two letter country code.
 
     def __post_init__(self) -> None:
         """
         Post-init processing. Raises SubscriberError if email address is empty string.
         """
+        # Country validation.
+        if country := self.country:
+            if (not isinstance(country, str)) or (len(country) != 2):
+                raise SubscriberError("Country must be ISO 3166-1 two letter country code.")
+        # TODO: Improve email validation.
         if is_empty_or_whitespace(self.email):
-            # TODO: Improve email validation.
             raise SubscriberError("Email address cannot be empty string.")
 
     def as_dict(self) -> dict[str, str]:
