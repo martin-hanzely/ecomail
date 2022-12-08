@@ -168,5 +168,5 @@ class EcoMailService:
         try:
             response.raise_for_status()  # Raise exception if response status is not OK.
         except requests.HTTPError as exc:
-            raise ApiConnectionError(f"Cannot connect to endpoint: {endpoint}") from exc
+            raise ApiConnectionError(response.text) from exc
         return response
