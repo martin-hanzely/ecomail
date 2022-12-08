@@ -4,7 +4,6 @@ import pytest
 
 from ecomail.exceptions import ApiConnectionError, ApiRequestError
 from ecomail.service import EcoMailOptions, EcoMailService
-from ecomail.subscriber import Subscriber
 
 
 class MockResponse:
@@ -29,13 +28,6 @@ class TestEcoMailService:
             api_key="123_mock_key",
         )
         return EcoMailService(options=options)
-
-    @pytest.fixture
-    def subscriber(self) -> Subscriber:
-        """
-        Dummy subscriber.
-        """
-        return Subscriber(name="John", surname="Doe", email="user@example.com", phone="123")
 
     def test_add_new_list(self, service):
         list_id = service.add_new_list(

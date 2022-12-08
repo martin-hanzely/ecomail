@@ -3,7 +3,6 @@ import os
 import pytest
 
 from ecomail.service import EcoMailOptions, EcoMailService
-from ecomail.subscriber import Subscriber
 
 
 class TestIntegration:
@@ -23,13 +22,6 @@ class TestIntegration:
             api_key=api_key,
         )
         return EcoMailService(options=options)
-
-    @pytest.fixture
-    def subscriber(self) -> Subscriber:
-        """
-        Dummy subscriber.
-        """
-        return Subscriber(name="John", surname="Doe", email="user@example.com", phone="123")
 
     def test_add_new_list(self, service):
         list_id = service.add_new_list(
