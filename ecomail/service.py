@@ -8,6 +8,9 @@ from ecomail.exceptions import ApiConnectionError, ApiRequestError
 from ecomail.subscriber import Subscriber
 
 
+DEFAULT_TIMEOUT = 60  # 60s.
+
+
 _mapping = dict[str, Any]
 """Type alias for mappings, eg. query and headers."""
 
@@ -19,6 +22,7 @@ class EcoMailOptions:
     """
     base_url: str
     api_key: str
+    default_timeout: int = DEFAULT_TIMEOUT
 
 
 class EcoMailService:
@@ -105,6 +109,7 @@ class EcoMailService:
         self,
         list_id: int,
         subscriber: Subscriber,
+        trigger_autoresponders: bool = False,
     ) -> requests.Response:
         """
         Calls "Lists/List subscribe/Add new subscriber to list" api endpoint.
@@ -115,9 +120,11 @@ class EcoMailService:
             "subscriber_data": subscriber.as_dict(),
             "update_existing": True,
             "resubscribe": False,
-            # trigger_autoresponders  # (default: false) - Trigger automations after subscribe.
+            # Trigger automations after subscribe.
+            "trigger_autoresponders": trigger_autoresponders,
+            # Skip double opt-in.
+            "skip_confirmation": True,
             # trigger_notification  # (default: false) - Send subscribe notifications.
-            "skip_confirmation": True, # Skip double opt-in.
         }
         return self._call_api(endpoint=endpoint_path, json=data, headers={})
 
@@ -146,7 +153,7 @@ class EcoMailService:
             urljoin(base_url, endpoint),
             json=json,  # Data must be sent as JSON.
             headers={"key": self._options.api_key} | headers,  # Authentication required.
-            timeout=60,
+            timeout=self._options.default_timeout,
         )
         try:
             response.raise_for_status()  # Raise exception if response status is not OK.
