@@ -5,6 +5,7 @@ from urllib.parse import urljoin
 import requests
 
 from ecomail.campaign import Campaign
+from ecomail.campaign_stats_detail import CampaignStatsDetail, CampaignStatsDetailSubscriber
 from ecomail.exceptions import ApiConnectionError, ApiRequestError
 from ecomail.subscriber import Subscriber
 
@@ -100,8 +101,30 @@ class EcoMailService:
         """
         Returns list of campaigns.
         """
-        # TODO
-        raise NotImplementedError
+        response = self._call_get_campaigns_list_page()
+        json_data: list[dict[str, Any]] = response.json()
+        return [Campaign.from_dict(_c) for _c in json_data]
+
+    def get_campaigns_stats_detail(self, campaign_id: int) -> CampaignStatsDetail:
+        """
+        Returns detailed statistics of campaign.
+        """
+        page = 1
+        stats = CampaignStatsDetail(subscribers=[])
+        while True:
+            response = self._call_get_campaigns_stats_detail_page(campaign_id, page)
+            json_data: dict[str, Any] = response.json()
+            stats.subscribers.extend([
+                CampaignStatsDetailSubscriber.from_dict(email=_e, data=_d)
+                for _e, _d in json_data["subscribers"].items()
+            ])
+
+            if (total := json_data.get("total")) is not None and len(stats.subscribers) >= total:
+                break
+            if not json_data.get("next_page_url"):
+                break
+            page += 1
+        return stats
 
     def _call_add_new_list(
         self,
@@ -121,7 +144,7 @@ class EcoMailService:
             "from_email": from_email,
             "reply_to": reply_to,
         }
-        return self._call_api(endpoint=endpoint_path, json=data, headers={})
+        return self._call_post(endpoint=endpoint_path, json=data)
 
     def _call_add_new_subscriber_to_list(
         self,
@@ -144,7 +167,7 @@ class EcoMailService:
             "skip_confirmation": True,
             # trigger_notification  # (default: false) - Send subscribe notifications.
         }
-        return self._call_api(endpoint=endpoint_path, json=data, headers={})
+        return self._call_post(endpoint=endpoint_path, json=data)
 
     def _call_add_bulk_subscribers_to_list(
         self,
@@ -160,17 +183,52 @@ class EcoMailService:
             "subscriber_data": [_s.as_dict() for _s in subscribers],
             "update_existing": True,
         }
-        return self._call_api(endpoint=endpoint_path, json=data, headers={})
+        return self._call_post(endpoint=endpoint_path, json=data)
 
-    def _call_api(self, endpoint: str, json: _mapping, headers: _mapping) -> requests.Response:
+    def _call_get_campaigns_list_page(self) -> requests.Response:
         """
-        Generic api call with provided parameters. Parameters override query and header defaults.
+        Calls "Campaigns/List campaigns/List campaigns" api endpoint.
+        https://ecomailappapiv2.docs.apiary.io/#reference/campaigns/campaigns-collection/list-all-campaigns
+        """
+        endpoint_path = "campaigns"
+        return self._call_get(endpoint=endpoint_path, query={})
+
+    def _call_get_campaigns_stats_detail_page(self, campaign_id: int, page: int) -> requests.Response:
+        """
+        Calls "Campaigns/Campaign stats/Get campaign stats" api endpoint.
+        https://ecomailappapiv2.docs.apiary.io/#reference/campaigns/get-campaign-stats-detail/get-campaign-stats-detail
+        """
+        endpoint_path = f"campaigns/{campaign_id}/stats-detail"
+        return self._call_get(endpoint=endpoint_path, query={"page": page})
+
+    def _call_get(self, endpoint: str, query: _mapping) -> requests.Response:
+        """
+        Generic GET api call with provided parameters.
+        Parameters override query and header defaults.
+        """
+        base_url = self._options.base_url
+        response = requests.get(
+            urljoin(base_url, endpoint),
+            params=query,
+            headers={"key": self._options.api_key},  # Authentication required.
+            timeout=self._options.default_timeout,
+        )
+        try:
+            response.raise_for_status()  # Raise exception if response status is not OK.
+        except requests.HTTPError as exc:
+            raise ApiConnectionError(response.text) from exc
+        return response
+
+    def _call_post(self, endpoint: str, json: _mapping) -> requests.Response:
+        """
+        Generic POST api call with provided parameters.
+        Parameters override query and header defaults.
         """
         base_url = self._options.base_url
         response = requests.post(
             urljoin(base_url, endpoint),
             json=json,  # Data must be sent as JSON.
-            headers={"key": self._options.api_key} | headers,  # Authentication required.
+            headers={"key": self._options.api_key},  # Authentication required.
             timeout=self._options.default_timeout,
         )
         try:

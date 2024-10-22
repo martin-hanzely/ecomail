@@ -1,9 +1,12 @@
+import datetime
 from typing import Any
 
 import pytest
 
+from ecomail.campaign import CampaignStatus
 from ecomail.exceptions import ApiConnectionError, ApiRequestError
 from ecomail.service import EcoMailOptions, EcoMailService
+from tests.conftest import subscriber
 
 
 class MockResponse:
@@ -133,3 +136,108 @@ class TestEcoMailService:
         subscribers = [subscriber for _ in range(3001)]
         with pytest.raises(ApiRequestError):
             service.add_bulk_subscribers_to_list(list_id=123, subscribers=subscribers)
+
+    def test_get_campaigns_list(self, monkeypatch, service):
+        class CampaignsListMockResponse(MockResponse):
+            """
+            Mock response with list of campaigns.
+            """
+            _val = [
+                {
+                    "id": 1,
+                    "from_name": "From name",
+                    "from_email": "from@foo.cz",
+                    "reply_to": "reply@bar.cz",
+                    "title": "My first campaign",
+                    "subject": "First hello",
+                    "ga": "ga_tracking_code",
+                    "sent_at": "2014-09-08 22:04:03",
+                    "changed_at": "2014-09-08 22:04:04",
+                    "recipients": 1,
+                    "inserted": "2014-09-08 14:41:31",
+                    "status": 3,
+                    "scheduled_at": None,
+                    "template_id": 62,
+                    "archive_url": "https://foo.ecomailapp.cz/campaigns/render/1",
+                    "attachments": "N;"
+                },
+            ]
+
+        monkeypatch.setattr(
+            service,
+            "_call_get_campaigns_list_page",
+            lambda *args, **kwargs: CampaignsListMockResponse(),
+        )
+
+        campaigns = service.get_campaigns_list()
+
+        assert isinstance(campaigns, list)
+        assert len(campaigns) == 1
+
+        campaign = campaigns[0]
+        assert campaign.id == 1
+        assert campaign.from_name == "From name"
+        assert campaign.from_email == "from@foo.cz"
+        assert campaign.reply_to == "reply@bar.cz"
+        assert campaign.title == "My first campaign"
+        assert campaign.subject == "First hello"
+        assert campaign.sent_at == datetime.datetime(2014, 9, 8, 22, 4, 3)
+        assert campaign.recipients == 1
+        assert campaign.status == CampaignStatus.SENT
+
+    def test_get_campaigns_stats_detail(self, monkeypatch, service):
+        class CampaignsStatsDetailMockResponse(MockResponse):
+            """
+            Mock response with detailed statistics of campaign.
+            """
+            _val = {
+                "next_page_url": None,
+                "total": 2,
+                "per_page": 100,
+                "subscribers": {
+                    "foo@bar.com": {
+                        "open": 2,
+                        "send": 1,
+                        "unsub": 0,
+                        "soft_bounce": 0,
+                        "click": 1,
+                        "hard_bounce": 0,
+                        "out_of_band": 0,
+                        "spam": 0,
+                        "spam_complaint": 0
+                    },
+                    "foo2@bar.com": {
+                        "open": 4,
+                        "send": 1,
+                        "unsub": 0,
+                        "soft_bounce": 0,
+                        "click": 2,
+                        "hard_bounce": 0,
+                        "out_of_band": 0,
+                        "spam": 0,
+                        "spam_complaint": 0
+                    }
+                }
+            }
+
+        monkeypatch.setattr(
+            service,
+            "_call_get_campaigns_stats_detail_page",
+            lambda *args, **kwargs: CampaignsStatsDetailMockResponse(),
+        )
+
+        stats = service.get_campaigns_stats_detail(campaign_id=123)
+
+        assert len(stats.subscribers) == 2
+
+        subscriber1 = stats.subscribers[0]
+        assert subscriber1.email == "foo@bar.com"
+        assert subscriber1.open == 2
+        assert subscriber1.send == 1
+        assert subscriber1.click == 1
+
+        subscriber2 = stats.subscribers[1]
+        assert subscriber2.email == "foo2@bar.com"
+        assert subscriber2.open == 4
+        assert subscriber2.send == 1
+        assert subscriber2.click == 2
