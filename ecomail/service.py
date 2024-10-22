@@ -4,6 +4,7 @@ from urllib.parse import urljoin
 
 import requests
 
+from ecomail.campaign import Campaign
 from ecomail.exceptions import ApiConnectionError, ApiRequestError
 from ecomail.subscriber import Subscriber
 
@@ -94,6 +95,13 @@ class EcoMailService:
 
         # Response status code is checked. Returns job ID. No need to pass anything to client.
         _ = self._call_add_bulk_subscribers_to_list(list_id, subscribers)
+
+    def get_campaigns_list(self) -> list[Campaign]:
+        """
+        Returns list of campaigns.
+        """
+        # TODO
+        raise NotImplementedError
 
     def _call_add_new_list(
         self,

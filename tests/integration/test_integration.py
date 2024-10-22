@@ -5,6 +5,7 @@ import pytest
 from ecomail.service import EcoMailOptions, EcoMailService
 
 
+@pytest.mark.skip("Mock server not available!")
 class TestIntegration:
 
     @pytest.fixture
