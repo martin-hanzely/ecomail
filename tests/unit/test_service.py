@@ -10,8 +10,11 @@ class MockResponse:
     """
     Mock response with empty JSON data.
     """
+    _val = {}
+
+    # noinspection PyUnusedLocal
     def json(self, *args, **kwargs) -> dict[str, Any]:
-        return {}
+        return self._val
 
 
 class TestEcoMailService:
@@ -30,12 +33,14 @@ class TestEcoMailService:
         return EcoMailService(options=options)
 
     def test_add_new_list(self, monkeypatch, service):
-        class NewListMockResponse:
+        class NewListMockResponse(MockResponse):
             """
             Mock response with list ID.
             """
-            def json(self, *args, **kwargs) -> dict[str, Any]:
-                return {"id": 123}
+            _val = {
+                "name": "New list name",
+                "id": 123
+            }
 
         monkeypatch.setattr(
             service,
@@ -62,17 +67,27 @@ class TestEcoMailService:
             )
 
     def test_add_new_subscriber_to_list(self, monkeypatch, service, subscriber):
-        class NewSubscriberMockResponse:
+        class NewSubscriberMockResponse(MockResponse):
             """
             Mock response with subscriber ID.
             """
-            def json(self, *args, **kwargs) -> dict[str, Any]:
-                return {"id": 123}
+            _val = {
+                "id": 123,
+                "name": "Jan",
+                "surname": "Novak",
+                "email": "jan@example.com",
+                "gender": None,
+                "bounce_soft": 0,
+                "bounced_hard": 0,
+                "bounce_message": None,
+                "inserted_at": "2024-10-21 01:00:00",
+                "already_subscribed": True
+            }
 
         monkeypatch.setattr(
             service,
             "_call_add_new_subscriber_to_list",
-            lambda *args, **kwargs: NewSubscriberMockResponse(),  # TODO: Use real response!
+            lambda *args, **kwargs: NewSubscriberMockResponse(),
         )
 
         subscriber_id = service.add_new_subscriber_to_list(list_id=123, subscriber=subscriber)
@@ -83,13 +98,21 @@ class TestEcoMailService:
     def test_add_new_subscriber_to_list__invalid_response(self, monkeypatch, service, subscriber):
         monkeypatch.setattr(service, "_call_api", lambda *args, **kwargs: MockResponse())
         with pytest.raises(ApiConnectionError):
-             _ = service.add_new_subscriber_to_list(list_id=123, subscriber=subscriber)
+            _ = service.add_new_subscriber_to_list(list_id=123, subscriber=subscriber)
 
     def test_add_bulk_subscribers_to_list(self, monkeypatch, service, subscriber):
+        class NewSubscribersBulkMockResponse(MockResponse):
+            """
+            Mock response with empty JSON data.
+            """
+            _val = {
+                "inserts": 2
+            }
+
         monkeypatch.setattr(
             service,
             "_call_add_bulk_subscribers_to_list",
-            lambda *args, **kwargs: MockResponse(),  # TODO: Use real response!
+            lambda *args, **kwargs: NewSubscribersBulkMockResponse(),
         )
 
         subscribers = [subscriber for _ in range(100)]
@@ -97,6 +120,7 @@ class TestEcoMailService:
         service.add_bulk_subscribers_to_list(list_id=123, subscribers=subscribers)
 
     def test_add_bulk_subscribers_to_list__too_many_subscribers(self, monkeypatch, service, subscriber):
+        # noinspection PyUnusedLocal
         def raise_error(*args, **kwargs):
             raise ApiRequestError("Too many subscribers")
 
