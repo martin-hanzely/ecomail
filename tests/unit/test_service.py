@@ -241,3 +241,38 @@ class TestEcoMailService:
         assert subscriber2.open == 4
         assert subscriber2.send == 1
         assert subscriber2.click == 2
+
+    def test_get_subscriber_details(self, monkeypatch, service):
+        class SubscriberDetailMockResponse(MockResponse):
+            """
+            Mock response with subscriber details.
+            """
+            _val = {
+                "subscriber": {
+                    "id": 1,
+                    "name": "Jan",
+                    "surname": "Novak",
+                    "email": "user@example.com",
+                    "phone": "123456789",
+                    "tags": ["tag1", "tag2"],
+                }
+            }
+
+        monkeypatch.setattr(
+            service,
+            "_call_get_subscriber_details",
+            lambda *args, **kwargs: SubscriberDetailMockResponse(),
+        )
+
+        subscriber = service.get_subscriber_details(subscriber_email="user@example.com", list_id=123)
+
+        assert subscriber.name == "Jan"
+        assert subscriber.surname == "Novak"
+        assert subscriber.email == "user@example.com"
+        assert subscriber.phone == "123456789"
+        assert subscriber.tags == ["tag1", "tag2"]
+
+    def test_get_subscriber_details__not_found(self, monkeypatch, service):
+        monkeypatch.setattr(service, "_call_api", lambda *args, **kwargs: MockResponse())
+        with pytest.raises(ApiRequestError):
+            _ = service.get_subscriber_details(subscriber_email="user@example.com", list_id=123)

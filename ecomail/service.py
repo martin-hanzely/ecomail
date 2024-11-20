@@ -126,6 +126,21 @@ class EcoMailService:
             page += 1
         return stats
 
+    def get_subscriber_details(self, list_id: int, subscriber_email: str) -> Subscriber:
+        """
+        Returns details of subscriber from given list.
+        """
+        response = self._call_get_subscriber_details(list_id, subscriber_email)
+        json_data: dict[str, Any] = response.json()
+        return Subscriber.from_dict(json_data["subscriber"])
+
+    def update_subscriber(self, list_id: int, subscriber_email: str, data: dict[str, Any]) -> None:
+        """
+        Updates subscriber data in given list.
+        """
+        _ = self._call_update_subscriber(list_id, subscriber_email, data)
+
+    # region Private methods to call API endpoints.
     def _call_add_new_list(
         self,
         name: str,
@@ -201,6 +216,25 @@ class EcoMailService:
         endpoint_path = f"campaigns/{campaign_id}/stats-detail"
         return self._call_get(endpoint=endpoint_path, query={"page": page})
 
+    def _call_get_subscriber_details(self, list_id: int, subscriber_email: str) -> requests.Response:
+        """
+        Calls "Lists/List subscribers/Get subscriber" api endpoint.
+        https://ecomailappapiv2.docs.apiary.io/#reference/lists/list-subscribe/get-subscriber
+        """
+        endpoint_path = f"lists/{list_id}/subscriber/{subscriber_email}"
+        return self._call_get(endpoint=endpoint_path, query={})
+
+    def _call_update_subscriber(self, list_id: int, subscriber_email: str, data: dict[str, Any]) -> requests.Response:
+        """
+        Calls "Lists/List subscribers/Update subscriber" api endpoint.
+        https://ecomailappapiv2.docs.apiary.io/#reference/lists/list-subscribe/update-subscriber
+        """
+        endpoint_path = f"lists/{list_id}/update-subscriber"
+        _d = {"email": subscriber_email, "subscriber_data": data}
+        return self._call_put(endpoint=endpoint_path, json=_d)
+    # endregion
+
+    # region Generic API call methods.
     def _call_get(self, endpoint: str, query: _mapping) -> requests.Response:
         """
         Generic GET api call with provided parameters.
@@ -236,3 +270,22 @@ class EcoMailService:
         except requests.HTTPError as exc:
             raise ApiConnectionError(response.text) from exc
         return response
+
+    def _call_put(self, endpoint: str, json: _mapping) -> requests.Response:
+        """
+        Generic PUT api call with provided parameters.
+        Parameters override query and header defaults.
+        """
+        base_url = self._options.base_url
+        response = requests.put(
+            urljoin(base_url, endpoint),
+            json=json,  # Data must be sent
+            headers={"key": self._options.api_key},  # Authentication required.
+            timeout=self._options.default_timeout,
+        )
+        try:
+            response.raise_for_status()  # Raise exception if response status is not OK.
+        except requests.HTTPError as exc:
+            raise ApiConnectionError(response.text) from exc
+        return response
+    # endregion
